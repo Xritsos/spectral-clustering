@@ -1,35 +1,20 @@
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.neighbors import kneighbors_graph
-from scipy.linalg import eigh, eig
-from numpy import linalg
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
-import warnings
-from scipy.sparse.linalg import eigsh
-import networkx as nx
-
+from sklearn.datasets import make_swiss_roll
 import pickle
+from sklearn.cluster import KMeans
+
+from spectral_embedding import laplacian_eigenmaps
+from rbf_kernel import rbf
 
 
 def unpickle(file):
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='bytes')
     return dict
-
-
-def rbf(x1, x2, gamma):
-    
-    n = x1.shape[0]
-    m = x2.shape[0]
-    
-    xx1 = np.dot(np.sum(np.power(x1, 2), 1).reshape(n, 1), np.ones((1, m)))
-    xx2 = np.dot(np.sum(np.power(x2, 2), 1).reshape(m, 1), np.ones((1, n))) 
-    
-    result = np.exp(-(xx1 + xx2.T - 2 * np.dot(x1, x2.T)) * gamma) 
-    
-    return result
 
 
 def read_data():
@@ -53,85 +38,12 @@ def read_data():
     return x
 
 
-def calculate_eigenmaps(neighbors, data):
-    
-    adj_matrix_obj = kneighbors_graph(data, n_neighbors=neighbors, metric='euclidean', 
-                                      mode='connectivity', include_self=False)
-    
-    adj_matrix = adj_matrix_obj.toarray()
-    adj_matrix += adj_matrix.T
-    adj_matrix = adj_matrix / 2
-    
-    print("Adjacency Matrix")
-    print(adj_matrix)
-    print()
-    
-    # weights = rbf(x, x, gamma=2)
-    
-    # check for fully connected graph
-    G = nx.from_numpy_array(adj_matrix)
-    cc = nx.number_connected_components(G)
-    print()
-    print(f"Connected Components: {cc}")
-    
-    if cc != 1:
-        warnings.warn("Graph is not fully connected, Laplacian Eigenmaps may not work as expected")
-    
-    d = adj_matrix.sum(axis=1)
-    D = np.diag(d)
-    print("Degree Matrix")
-    print(D)
-    
-    laplacian =  D - adj_matrix
-    
-    # # degree = np.identity(adj_matrix.shape[0]) * neighbors
-    
-    I = np.ones((adj_matrix.shape[0], adj_matrix.shape[0]))
-    
-    D = linalg.inv(D)
-    D = np.sqrt(D)
-    
-    # normalized Laplacian
-    laplacian_rw = np.dot(np.dot(D, laplacian), D)
-    
-    
-    sum_ = []
-    for i in range(laplacian.shape[0]):
-        sum_.append(np.sum(laplacian[i, :]))
-    
-    print("Laplacian row sum")
-    print(sorted(sum_))
-    print()
-    
-    sum_ = []
-    for i in range(laplacian.shape[1]):
-        sum_.append(np.sum(laplacian[:, i]))
-    
-    print("Laplacian col sum")
-    print(sorted(sum_))
-    print()
-    
-    # print("Laplacian Normalized")
-    # print(laplacian_rw)
-    # print()
-    # print("Laplacian")
-    # print(laplacian)
-    
-    # eigen_values, eigen_vectors = eigh(laplacian_rw)
-    eigen_values, eigen_vectors = eigh(laplacian, D)
-    
-    # # # # sort values and vectors
-    # # # idxs = np.argsort(eigen_values)
-        
-    # # # eigen_values = eigen_values[idxs]
-    # # # eigen_vectors = eigen_vectors[idxs]
-    
-    return eigen_values, eigen_vectors
-
-
-
 if __name__ == "__main__":
-    x = read_data()
+    neighbors = 11
+    print()
+    print(f"Number of Neighbors: {neighbors}")
+    
+    # x = read_data()
    
     # fig = plt.figure()
     
@@ -139,45 +51,53 @@ if __name__ == "__main__":
     
     # plt.show() 
     
-      
-    print(x.shape)
-    # neighbors = int(np.ceil(np.sqrt(x.shape[0])))
-    neighbors = 9
-    print()
-    print(f"Number of Neighbors: {neighbors}")
+    x, d_color = make_swiss_roll(500, random_state=0)
     
-    scaler = StandardScaler()
+    # thresholds = np.percentile(d_color, [25, 50, 75])
+
+    # d_color = np.digitize(d_color, bins=thresholds)
+    
+    scaler = MinMaxScaler()
     x = scaler.fit_transform(x)
-    
-    print(x[:, 0].shape)
-    print(x[:, 1].shape)
-    print(x[:, 2].shape)
+
     
     fig = plt.figure(figsize = (10, 7))
     ax = plt.axes(projection ="3d")
- 
-# Create Plot
 
-    ax.scatter3D(x[:, 0], x[:, 1], x[:, 2])
- 
-# Show plot
+    ax.scatter3D(x[:, 0], x[:, 1], x[:, 2], c=d_color)
 
     plt.show()
     
-    eigen_values, eigen_vectors = calculate_eigenmaps(neighbors, x)
-    # calculate_eigenmaps(neighbors, x)
-    
-    eigen_vectors = eigen_vectors[eigen_values > 1e-14, :]
-    eigen_values = eigen_values[eigen_values > 1e-14]
-    
-    #eigen_values = eigen_values[:2]
-    eigen_vectors = eigen_vectors[:, :2]
+    spectral_emb = laplacian_eigenmaps(n_dimensions=2)
+    ad_matrix = spectral_emb.adjacency_matrix(x, neighbors)
+    eigen_values, eigen_vectors = spectral_emb.eigen_maps()
     
     fig = plt.figure()
+
+    plt.plot(eigen_values, marker='o')
     
-    plt.scatter(eigen_vectors[:, 0], eigen_vectors[:, 1])
+    plt.show()
     
+    
+    scaler = MinMaxScaler()
+    eigen_vectors = scaler.fit_transform(eigen_vectors)
+    
+    kmeans = KMeans(n_clusters=7)
+    tr = kmeans.fit_predict(eigen_vectors)    
+    
+    fig, axs = plt.subplots(1, 2)
+    
+    axs[0].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=d_color[spectral_emb.n_zero_values:])
+    axs[1].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=tr)
+    # plt.xlim([-0.2, 0])
+    # plt.ylim([-0.15, 0.15])
     plt.show() 
     
-   
+    # fig = plt.figure(figsize = (10, 7))
+    # ax = plt.axes(projection ="3d")
+
+    # ax.scatter3D(eigen_vectors[:, 0], eigen_vectors[:, 1], eigen_vectors[:, 2], 
+    #              c=d_color[spectral_emb.n_zero_values:])
+
+    # plt.show()
     
