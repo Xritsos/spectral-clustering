@@ -1,13 +1,21 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.neighbors import kneighbors_graph
-from scipy.linalg import eigh
+from scipy.linalg import eigh, eig
 from numpy import linalg
 from matplotlib import pyplot as plt
 import warnings
-
+from scipy.sparse.linalg import eigsh
 import networkx as nx
+
+import pickle
+
+
+def unpickle(file):
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='bytes')
+    return dict
 
 
 def rbf(x1, x2, gamma):
@@ -23,10 +31,13 @@ def rbf(x1, x2, gamma):
     return result
 
 
-if __name__ == "__main__":
-    neighbors = 9
+def read_data():
+    # batch = unpickle('./cifar/data_batch_1')
+    
+    # data = batch[b'data'][:1000]
     
     df = pd.read_csv('./cereal.csv')
+    #print(df.columns)
 
     x1 = df['calories'].to_numpy()
     x2 = df['fat'].to_numpy()
@@ -36,71 +47,100 @@ if __name__ == "__main__":
     
     x = np.concatenate((x1, x2), axis=1)
     
-    print(x.shape)
+    return x
+
+
+def calculate_eigenmaps(neighbors, data):
     
-    scaler = MinMaxScaler()
-    x = scaler.fit_transform(x)
+    adj_matrix_obj = kneighbors_graph(data, n_neighbors=neighbors, metric='euclidean', 
+                                      mode='connectivity', include_self=False)
     
-    graph = kneighbors_graph(x, n_neighbors=neighbors, metric='euclidean', 
-                             mode='connectivity', include_self='auto')
+    adj_matrix = adj_matrix_obj.toarray()
+    adj_matrix += adj_matrix.T
+    adj_matrix = adj_matrix / 2
     
-    graph = graph.toarray()
+    print("Adjacency Matrix")
+    print(adj_matrix)
+    print()
     
-    # graph = rbf(x, x, gamma=0.00000004)
+    # weights = rbf(x, x, gamma=2)
     
-    G = nx.from_numpy_array(graph)
+    # check for fully connected graph
+    G = nx.from_numpy_array(adj_matrix)
     cc = nx.number_connected_components(G)
+    print()
+    print(f"Connected Components: {cc}")
     
     if cc != 1:
         warnings.warn("Graph is not fully connected, Laplacian Eigenmaps may not work as expected")
     
+    d = adj_matrix.sum(axis=1)
+    D = np.diag(d)
+    print("Degree Matrix")
+    print(D)
     
-    degree = np.identity(graph.shape[0]) * neighbors
+    laplacian =  D - adj_matrix
     
-    I = np.identity(graph.shape[0])
+    # # degree = np.identity(adj_matrix.shape[0]) * neighbors
     
-    laplacian_rw = I - np.dot(linalg.inv(degree), graph)
+    I = np.ones((adj_matrix.shape[0], adj_matrix.shape[0]))
     
-    eigen_values, eigen_vectors = linalg.eigh(laplacian_rw)
-    idxs = np.argsort(eigen_values)
+    D = linalg.inv(D)
+    D = np.sqrt(D)
+    
+    # normalized Laplacian
+    laplacian_rw = np.matmul(np.matmul(D, laplacian), D)
+    
+    
+    sum_ = []
+    for i in range(laplacian_rw.shape[0]):
+        sum_.append(np.sum(laplacian_rw[i, :]))
+    
+    print("Laplacian row sum")
+    print(sorted(sum_))
+    print()
+    
+    sum_ = []
+    for i in range(laplacian_rw.shape[1]):
+        sum_.append(np.sum(laplacian_rw[:, i]))
+    
+    print("Laplacian col sum")
+    print(sorted(sum_))
+    print()
+    
+    # print("Laplacian Normalized")
+    # print(laplacian_rw)
+    # print()
+    # print("Laplacian")
+    # print(laplacian)
+    
+    eigen_values, eigen_vectors = eigh(laplacian_rw)
+    # eigen_values, eigen_vectors = eigh(laplacian, D)
+    
+    # # # # sort values and vectors
+    # # # idxs = np.argsort(eigen_values)
         
-    eigen_values = eigen_values[idxs]
-    eigen_vectors = eigen_vectors[idxs]
+    # # # eigen_values = eigen_values[idxs]
+    # # # eigen_vectors = eigen_vectors[idxs]
+    
+    return eigen_values, eigen_vectors
+
+
+
+if __name__ == "__main__":
+    x = read_data()
+    
+    print(x.shape)
+    # neighbors = int(np.ceil(np.sqrt(x.shape[0])))
+    neighbors = 3
+    print()
+    print(f"Number of Neighbors: {neighbors}")
+    
+    scaler = MinMaxScaler()
+    x = scaler.fit_transform(x)
+    
+    eigen_values, eigen_vectors = calculate_eigenmaps(neighbors, x)
+    # calculate_eigenmaps(neighbors, x)
     
     print(eigen_values)
-    
-    # laplacian = degree - graph
-    
-   
-    # eigen_values, eigen_vectors = eigh(laplacian, degree)
-    # eigen_values = eigen_values[1:]
-    # eigen_vectors = eigen_vectors[1:]
-    
-    # print(eigen_values)
-    # m = 2
-    
-    # eigen_values = eigen_values[:2]
-    # eigen_vectors = eigen_vectors[:2]
-    
-    # x_new = np.dot(x, eigen_vectors)
-    
-    
-    # print(x)
-    # print(x_new)
-    
-    
-    # fig, ax = plt.subplots(figsize=(8, 8))
-    # cax = ax.matshow(graph, cmap='viridis')
-
-    # # Display numerical values in each cell
-    # for i in range(graph.shape[0]):
-    #     for j in range(graph.shape[1]):
-    #         ax.text(j, i, f'{graph[i, j]}', ha='center', va='center', color='white', fontsize=8)
-
-    # # Add labels and show the plot
-    # plt.title('Adjacency Matrix')
-    # plt.xlabel('Sample Index')
-    # plt.ylabel('Sample Index')
-    # plt.colorbar(cax, label='Distance')
-    # plt.show()
     
