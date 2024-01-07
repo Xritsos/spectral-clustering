@@ -108,34 +108,70 @@ if __name__ == "__main__":
     
     x = x.reshape((1000, 28**2))
     
+    # x, y = make_swiss_roll(500, random_state=3)
+    # thresholds = np.percentile(y, [25, 50, 75])
+
+    # y = np.digitize(y, bins=thresholds)
+
     scaler = MinMaxScaler()
     input_data = scaler.fit_transform(x)
     
-    pca = PCA(n_components=2)
-    init_data_vis = pca.fit_transform(input_data)
+    # pca = PCA(n_components=2)
+    # init_data_vis = pca.fit_transform(input_data)
     
-    neighbors = 5
-    spectral_emb = laplacian_eigenmaps(n_dimensions=2)
-    ad_matrix = spectral_emb.adjacency_matrix(input_data, neighbors)
+    neighbors_1 = 20
+    spectral_emb_1 = laplacian_eigenmaps(n_dimensions=2)
+    ad_matrix = spectral_emb_1.adjacency_matrix(input_data, neighbors_1, 
+                                                rbf_on=True, t=80)
     
-    eigen_values, eigen_vectors = spectral_emb.eigen_maps()
+    eigen_values, eigen_vectors = spectral_emb_1.eigen_maps()
     
-    # scaler = MinMaxScaler()
-    # eigen_vectors = scaler.fit_transform(eigen_vectors)
+    print(f"Eigen_vectors 1: {eigen_vectors.shape}")
+    
+    scaler = MinMaxScaler()
+    eigen_vectors = scaler.fit_transform(eigen_vectors)
+    
+    neighbors_2 = 15
+    spectral_emb_2 = laplacian_eigenmaps(n_dimensions=10)
+    ad_marix_2 = spectral_emb_2.adjacency_matrix(eigen_vectors, neighbors_2, 
+                                                 rbf_on=True, t=0.005)
+    
+    eigen_values_2, eigen_vectors_2 = spectral_emb_2.eigen_maps()
+    
+    print(f"Eigen_vectors 2: {eigen_vectors_2.shape}")
+    
+    scaler = MinMaxScaler()
+    eigen_vectors_2 = scaler.fit_transform(eigen_vectors_2)
     
     kmeans_spectral = KMeans(n_clusters=10, random_state=0, n_init=10)
-    spectral_labels = kmeans_spectral.fit_predict(eigen_vectors)
+    spectral_labels = kmeans_spectral.fit_predict(eigen_vectors_2)
     
-    fig, axs = plt.subplots(1, 2)
+    kmeans = KMeans(n_clusters=10, random_state=0, n_init=10)
+    means_labels = kmeans.fit_predict(eigen_vectors)
     
-    axs[0].scatter(init_data_vis[:, 0], init_data_vis[:, 1], c=y)
-    axs[1].scatter(init_data_vis[:, 0], init_data_vis[:, 1], c=spectral_labels)
     
-    axs[0].set_title("Initial Data")
-    axs[1].set_title("Spectral Clustering")
+    fig, axs = plt.subplots(1, 3)
+    
+    scatter1 = axs[0].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=y)
+    scatter2 = axs[1].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=spectral_labels)
+    scatter3 = axs[2].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=means_labels)
+    
+    axs[0].set_title("Data after Eigenmaps to 2D")
+    axs[1].set_title("Spectral Clustering Result")
+    axs[2].set_title("KMeans")
     
     axs[0].set_facecolor('black')
     axs[1].set_facecolor('black')
+    axs[2].set_facecolor('black')
+    
+    legend1 = axs[0].legend(*scatter1.legend_elements())
+    axs[0].add_artist(legend1)
+    
+    # legend2 = axs[1].legend(*scatter2.legend_elements())
+    # axs[1].add_artist(legend2)
+    
+    # legend3 = axs[2].legend(*scatter3.legend_elements())
+    # axs[2].add_artist(legend3)
     
     plt.show()
     
