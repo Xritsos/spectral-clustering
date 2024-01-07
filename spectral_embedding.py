@@ -17,17 +17,19 @@ class laplacian_eigenmaps():
         self.n_zero_values = 1
         self.n_dimensions = n_dimensions
         
-    def adjacency_matrix(self, data, neighbors):
+    def adjacency_matrix(self, data, neighbors, rbf_on=False, t=10):
         self.k = neighbors
+        
         # graph
         adj_matrix_obj = kneighbors_graph(data, n_neighbors=self.k, 
-                                          metric='euclidean',
-                                          mode='connectivity', 
-                                          include_self=True)
+                                        metric='euclidean',
+                                        mode='connectivity', 
+                                        include_self=True)
         # graph to numpy
         self.adj_matrix = adj_matrix_obj.toarray()
         
-        # self.adj_matrix *= rbf(data, data, t=100)
+        if rbf_on:
+            self.adj_matrix *= rbf(data, data, t=t)
         
         # check for symmetry
         is_symmetric = np.allclose(self.adj_matrix, self.adj_matrix.T, 
@@ -58,26 +60,28 @@ class laplacian_eigenmaps():
         # test Laplacian
         is_sum_zero = True
         
-        sum_ = []
-        # check rows
-        for i in range(Laplacian.shape[0]):
-            sum_.append(np.sum(Laplacian[i, :]))
+        # sum_ = []
+        # # check rows
+        # for i in range(Laplacian.shape[0]):
+        #     sum_.append(np.sum(Laplacian[i, :]))
         
-        if np.sum(sum_) != 0:
-            is_sum_zero = False
+        # if np.sum(sum_) != 0:
+        #     is_sum_zero = False
     
-        sum_ = []
-        # check cols
-        for i in range(Laplacian.shape[1]):
-            sum_.append(np.sum(Laplacian[:, i]))
+        # sum_ = []
+        # # check cols
+        # for i in range(Laplacian.shape[1]):
+        #     sum_.append(np.sum(Laplacian[:, i]))
             
-        if np.sum(sum_) != 0:
-            is_sum_zero = False
+        # if np.sum(sum_) != 0:
+        #     is_sum_zero = False
         
         # if not is_sum_zero:
         #     raise ValueError("Laplacian Matrix has non zero sums !")
         
-        # compute eigenvectors and eigenvalues
+        # if solve the generalized problem -> L = normalized (random walk)
+        # if solve simple eigenvalue problem -> L = simple
+        # compute eigenvectors and eigenvalues (solution of Lrw)
         self.eigen_values, self.eigen_vectors = eigh(Laplacian, D)
         
         # keep only the non-zeros
