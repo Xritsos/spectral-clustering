@@ -27,7 +27,7 @@ class laplacian_eigenmaps():
         # graph to numpy
         self.adj_matrix = adj_matrix_obj.toarray()
         
-        # self.adj_matrix *= rbf(data, data, t=20)
+        # self.adj_matrix *= rbf(data, data, t=100)
         
         # check for symmetry
         is_symmetric = np.allclose(self.adj_matrix, self.adj_matrix.T, 
@@ -81,7 +81,10 @@ class laplacian_eigenmaps():
         self.eigen_values, self.eigen_vectors = eigh(Laplacian, D)
         
         # keep only the non-zeros
-        self.eigen_values = self.eigen_values[:]
+        self.eigen_values = self.eigen_values[self.n_zero_values:]
+        self.eigen_vectors = self.eigen_vectors[:, self.n_zero_values:]
+        
+        # keep only the specified dimensions
         self.eigen_vectors = self.eigen_vectors[:, :self.n_dimensions]
         
         if self.n_dimensions > self.eigen_vectors.shape[1]:
