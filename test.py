@@ -41,16 +41,16 @@ def read_data():
     # x = batch[b'data']
     # y = np.asarray(batch[b'labels'])
     
-    x1 = x[y==0][:100]
-    x2 = x[y==1][:100]
-    x3 = x[y==2][:100]
-    x4 = x[y==3][:100]
-    x5 = x[y==4][:100]
-    x6 = x[y==5][:100]
-    x7 = x[y==6][:100]
-    x8 = x[y==7][:100]
-    x9 = x[y==8][:100]
-    x10 = x[y==9][:100]
+    x1 = x[y==0][:50]
+    x2 = x[y==1][:50]
+    x3 = x[y==2][:50]
+    x4 = x[y==3][:50]
+    x5 = x[y==4][:50]
+    x6 = x[y==5][:50]
+    x7 = x[y==6][:50]
+    x8 = x[y==7][:50]
+    x9 = x[y==8][:50]
+    x10 = x[y==9][:50]
     
     # image = x1[0]
     
@@ -70,16 +70,16 @@ def read_data():
     
     x = np.concatenate((x1, x2, x3, x4, x5, x6, x7, x8, x9, x10))
     
-    y1 = y[y==0][:100]
-    y2 = y[y==1][:100]
-    y3 = y[y==2][:100]
-    y4 = y[y==3][:100]
-    y5 = y[y==4][:100]
-    y6 = y[y==5][:100]
-    y7 = y[y==6][:100]
-    y8 = y[y==7][:100]
-    y9 = y[y==8][:100]
-    y10 = y[y==9][:100]
+    y1 = y[y==0][:50]
+    y2 = y[y==1][:50]
+    y3 = y[y==2][:50]
+    y4 = y[y==3][:50]
+    y5 = y[y==4][:50]
+    y6 = y[y==5][:50]
+    y7 = y[y==6][:50]
+    y8 = y[y==7][:50]
+    y9 = y[y==8][:50]
+    y10 = y[y==9][:50]
     
     y = np.concatenate((y1, y2, y3, y4, y5, y6, y7, y8, y9, y10))
     
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     
     x, y = read_data()
     
-    x = x.reshape((1000, 28**2))
+    x = x.reshape((x.shape[0], 28**2))
     
     # x, y = make_swiss_roll(500, random_state=3)
     # thresholds = np.percentile(y, [25, 50, 75])
@@ -116,49 +116,36 @@ if __name__ == "__main__":
     scaler = MinMaxScaler()
     input_data = scaler.fit_transform(x)
     
-    # pca = PCA(n_components=2)
-    # init_data_vis = pca.fit_transform(input_data)
-    
-    neighbors_1 = 20
+    neighbors_1 = 5
     spectral_emb_1 = laplacian_eigenmaps(n_dimensions=2)
-    ad_matrix = spectral_emb_1.adjacency_matrix(input_data, neighbors_1, 
-                                                rbf_on=True, t=80)
+    ad_matrix_1 = spectral_emb_1.adjacency_matrix(input_data, neighbors_1, 
+                                                  rbf_on=True, t=200)
     
-    eigen_values, eigen_vectors = spectral_emb_1.eigen_maps()
+    eigen_values_1, eigen_vectors_1 = spectral_emb_1.eigen_maps()
     
-    print(f"Eigen_vectors 1: {eigen_vectors.shape}")
+    print(eigen_values_1[0])
     
-    scaler = MinMaxScaler()
-    eigen_vectors = scaler.fit_transform(eigen_vectors)
-    
-    neighbors_2 = 15
-    spectral_emb_2 = laplacian_eigenmaps(n_dimensions=10)
-    ad_marix_2 = spectral_emb_2.adjacency_matrix(eigen_vectors, neighbors_2, 
-                                                 rbf_on=True, t=0.005)
-    
-    eigen_values_2, eigen_vectors_2 = spectral_emb_2.eigen_maps()
-    
-    print(f"Eigen_vectors 2: {eigen_vectors_2.shape}")
+    print(f"Eigen_vectors 1: {eigen_vectors_1.shape}")
     
     scaler = MinMaxScaler()
-    eigen_vectors_2 = scaler.fit_transform(eigen_vectors_2)
+    eigen_vectors_1 = scaler.fit_transform(eigen_vectors_1)
     
-    kmeans_spectral = KMeans(n_clusters=10, random_state=0, n_init=10)
-    spectral_labels = kmeans_spectral.fit_predict(eigen_vectors_2)
+    kmeans_spectral = KMeans(n_clusters=10, random_state=7, n_init=10)
+    spectral_labels = kmeans_spectral.fit_predict(eigen_vectors_1)
     
-    kmeans = KMeans(n_clusters=10, random_state=0, n_init=10)
-    means_labels = kmeans.fit_predict(eigen_vectors)
+    kmeans = KMeans(n_clusters=10, random_state=7, n_init=10)
+    means_labels = kmeans.fit_predict(input_data)
     
     
     fig, axs = plt.subplots(1, 3)
     
-    scatter1 = axs[0].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=y)
-    scatter2 = axs[1].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=spectral_labels)
-    scatter3 = axs[2].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=means_labels)
+    scatter1 = axs[0].scatter(eigen_vectors_1[:, 0], eigen_vectors_1[:, 1], c=y, cmap='tab20')
+    scatter2 = axs[1].scatter(eigen_vectors_1[:, 0], eigen_vectors_1[:, 1], c=spectral_labels, cmap='tab10')
+    scatter3 = axs[2].scatter(eigen_vectors_1[:, 0], eigen_vectors_1[:, 1], c=means_labels, cmap='tab10')
     
     axs[0].set_title("Data after Eigenmaps to 2D")
     axs[1].set_title("Spectral Clustering Result")
-    axs[2].set_title("KMeans")
+    axs[2].set_title("KMeans Result")
     
     axs[0].set_facecolor('black')
     axs[1].set_facecolor('black')
@@ -174,65 +161,4 @@ if __name__ == "__main__":
     # axs[2].add_artist(legend3)
     
     plt.show()
-    
-    # kmeans_spectral = KMeans(n_clusters=3, random_state=0, n_init=10)
-    # spectral_labels = kmeans_spectral.fit_predict(eigen_vectors)
-    
-    # spectral_labels = spectral_labels.reshape((image.shape[:2]))
-    
-    # kmeans = KMeans(n_clusters=3, random_state=0, n_init=10)
-    # labels = kmeans.fit_predict(input_data)
-    
-    # labels = labels.reshape((image.shape[:2]))
-    
-    
-    # # spectral_labels[spectral_labels!=4] = 0
-    # # labels[labels!=1] = 0
-    
-    
-    # fig, axs = plt.subplots(1, 3)
-    
-    # axs[0].imshow(image)
-    # axs[1].imshow(spectral_labels)
-    # axs[2].imshow(labels)
-    
-    # axs[0].set_title("RGB Image")
-    # axs[1].set_title("Spectral Clustering")
-    # axs[2].set_title("KMeans")
-    
-    # plt.show()
-    
-    # fig = plt.figure(figsize = (10, 7))
-    # ax = plt.axes(projection ="3d")
-
-    # ax.scatter3D(x[:, 0], x[:, 1], x[:, 2], c=d_color)
-
-    # plt.show()
-    
-    
-    
-    # fig = plt.figure()
-
-    # plt.plot(eigen_values, marker='o')
-    
-    # plt.show()
-    
-    # fig, axs = plt.subplots(1, 2)
-    
-    # axs[0].scatter(eigen_vectors[:, 0], eigen_vectors[:, 1], c=d_color[spectral_emb.n_zero_values:])
-    # axs[1].scatter(sk_emb[:, 0], sk_emb[:, 1], c=d_color)
-    # # plt.xlim([-0.2, 0])
-    # # plt.ylim([-0.15, 0.15])
-    # plt.show() 
-  
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 2, 1, projection ="3d")
-    # ax.scatter3D(eigen_vectors[:, 0], eigen_vectors[:, 1], eigen_vectors[:, 2], 
-    #              c=d_color[spectral_emb.n_zero_values:])
-    
-    # ax = fig.add_subplot(1, 2, 2, projection ="3d")    
-    # ax.scatter3D(sk_emb[:, 0], sk_emb[:, 1], sk_emb[:, 2], 
-    #              c=d_color)
-
-    # plt.show()
     
