@@ -29,8 +29,8 @@ class laplacian_eigenmaps():
         self.adj_matrix = adj_matrix_obj.toarray()
         
         if rbf_on:
-            self.adj_matrix *= rbf(data, data, t=t)
-        
+            self.adj_matrix *= rbf(data, data, t)
+            
         # check for symmetry
         is_symmetric = np.allclose(self.adj_matrix, self.adj_matrix.T, 
                                    rtol=1e-05, atol=1e-08)
@@ -57,28 +57,6 @@ class laplacian_eigenmaps():
         
         Laplacian = D - self.adj_matrix
         
-        # test Laplacian
-        is_sum_zero = True
-        
-        # sum_ = []
-        # # check rows
-        # for i in range(Laplacian.shape[0]):
-        #     sum_.append(np.sum(Laplacian[i, :]))
-        
-        # if np.sum(sum_) != 0:
-        #     is_sum_zero = False
-    
-        # sum_ = []
-        # # check cols
-        # for i in range(Laplacian.shape[1]):
-        #     sum_.append(np.sum(Laplacian[:, i]))
-            
-        # if np.sum(sum_) != 0:
-        #     is_sum_zero = False
-        
-        # if not is_sum_zero:
-        #     raise ValueError("Laplacian Matrix has non zero sums !")
-        
         # if solve the generalized problem -> L = normalized (random walk)
         # if solve simple eigenvalue problem -> L = simple
         # compute eigenvectors and eigenvalues (solution of Lrw)
@@ -88,11 +66,11 @@ class laplacian_eigenmaps():
         self.eigen_values = self.eigen_values[self.n_zero_values:]
         self.eigen_vectors = self.eigen_vectors[:, self.n_zero_values:]
         
+        if self.n_dimensions > self.eigen_vectors.shape[1]:
+            raise ValueError(f"Number of dimensions cannot be greater than {self.eigen_vectors.shape[1]} !")
+        
         # keep only the specified dimensions
         self.eigen_vectors = self.eigen_vectors[:, :self.n_dimensions]
-        
-        if self.n_dimensions > self.eigen_vectors.shape[1]:
-            raise ValueError("Number of dimensions cannot be greater than initial !")
         
         return self.eigen_values, self.eigen_vectors
         
