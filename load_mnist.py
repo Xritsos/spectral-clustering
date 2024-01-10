@@ -4,12 +4,12 @@ import struct
 
 def load(n_samples):
     
-    with open('./mnist_labels.idx1-ubyte', 'rb') as f:
+    with open('./MNIST/labels.idx1-ubyte', 'rb') as f:
         magic, size = struct.unpack(">II", f.read(8))
         y = np.fromfile(f, dtype=np.dtype(np.uint8).newbyteorder('>'))
         y = y.reshape((size,))
     
-    with open('./mnist.idx3-ubyte', 'rb') as f:
+    with open('./MNIST/train.idx3-ubyte', 'rb') as f:
         magic, size = struct.unpack(">II", f.read(8))
         nrows, ncols = struct.unpack(">II", f.read(8))
         x = np.fromfile(f, dtype=np.dtype(np.uint8).newbyteorder('>'))
