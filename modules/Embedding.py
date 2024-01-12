@@ -5,7 +5,7 @@ from sklearn.neighbors import kneighbors_graph
 from scipy.linalg import eigh
 import networkx as nx
 
-from heat_kernel import rbf
+from modules.heat_kernel import rbf
 
 
 class Spectral_Embedding():
@@ -17,6 +17,7 @@ class Spectral_Embedding():
         self.eigen_vectors = None
         self.n_zero_values = 1
         self.n_dimensions = n_dimensions
+        self.t = t
         self.neighbors = neighbors
         self.rbf_on = rbf_on
         
@@ -28,6 +29,9 @@ class Spectral_Embedding():
                                         include_self=True)
         # graph to numpy
         self.adj_matrix = adj_matrix_obj.toarray()
+        
+        if self.rbf_on:
+            self.adj_matrix *= rbf(data, data, self.t)
             
         # check for symmetry
         is_symmetric = np.allclose(self.adj_matrix, self.adj_matrix.T, 
@@ -35,9 +39,6 @@ class Spectral_Embedding():
         
         if not is_symmetric:
             self.adj_matrix = (self.adj_matrix + self.adj_matrix.T) / 2
-            
-        if self.rbf_on:
-            self.adj_matrix *= rbf(data, data, t)
             
         # check for fully connected graph
         G = nx.from_numpy_array(self.adj_matrix)
