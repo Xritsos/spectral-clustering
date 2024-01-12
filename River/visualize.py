@@ -37,6 +37,12 @@ def plot():
     scatter1 = axs[0].scatter(vectors[:, 0], vectors[:, 1])
     scatter2 = axs[1].scatter(x_tsne[:, 0], x_tsne[:, 1])
     
+    axs[0].set_yticks([])
+    axs[0].set_xticks([])
+    
+    axs[1].set_yticks([])
+    axs[1].set_xticks([])
+    
     axs[0].set_title("Spectrtal Embedding 2D")
     axs[1].set_title("t-SNE 2D")
     
