@@ -2,7 +2,10 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from Embedding import Spectral_Embedding
+import sys
+sys.path.append('./')
+
+from modules.Embedding import Spectral_Embedding
 
 
 
