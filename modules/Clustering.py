@@ -36,7 +36,7 @@ class Spectral_Clustering():
         self.labels = self.kmeans.predict(data)
         self.centroids = self.kmeans.cluster_centers_
         
-        self.labels
+        return self.labels
         
     def predict(self, data):
         
