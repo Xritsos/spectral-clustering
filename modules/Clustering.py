@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 import sys
 sys.path.append('./')
@@ -24,23 +23,20 @@ class Spectral_Clustering():
         self.labels = None
         self.embedded_data = None
         
-    def fit(self, data):
-        
+    def embedd(self, data):
         emb = Spectral_Embedding(n_dimensions=self.n_dim, rbf_on=self.rbf, 
                                  neighbors=self.neighbors, t=self.t)
         
         self.eigen_values, self.embedded_data = emb.transform(data=data)
         
-        scaler = MinMaxScaler()
-        self.embedded_data = scaler.fit_transform(self.embedded_data)
+    def cluster(self, data):
+        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=7, n_init=10)
+        self.kmeans.fit(data)
         
-        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=7, n_init=30)
-        self.kmeans.fit(self.embedded_data)
-        
-        self.labels = self.kmeans.predict(self.embedded_data)
+        self.labels = self.kmeans.predict(data)
         self.centroids = self.kmeans.cluster_centers_
         
-        return self.embedded_data, self.labels
+        self.labels
         
     def predict(self, data):
         
