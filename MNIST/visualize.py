@@ -18,45 +18,71 @@ def plot():
     scaler = MinMaxScaler()
     x = scaler.fit_transform(x)
     
-    # spectral embedding
-    sp_emb = Spectral_Embedding(n_dimensions=2, neighbors=40, rbf_on=True, t=100)
-    values, vectors = sp_emb.transform(x)
+    neigs = [4, 8, 10, 15, 20, 40]
+    taus = [10, 20, 40, 100]
     
-    vectors = scaler.fit_transform(vectors)
-    
-    # t-SNE embedding
-    tsne = TSNE(n_components=2, learning_rate='auto', init='random', 
-                perplexity=10, random_state=42)
-    
-    x_tsne = tsne.fit_transform(x)
-    
-    x_tsne = scaler.fit_transform(x_tsne)
-    
-    fig, axs = plt.subplots(1, 2)
-    
-    scatter1 = axs[0].scatter(vectors[:, 0], vectors[:, 1], c=y)
-    scatter2 = axs[1].scatter(x_tsne[:, 0], x_tsne[:, 1], c=y)
-    
-    axs[0].set_facecolor('black')
-    axs[1].set_facecolor('black')
-    
-    axs[0].set_yticks([])
-    axs[0].set_xticks([])
-    
-    axs[1].set_yticks([])
-    axs[1].set_xticks([])
-    
-    axs[0].set_title("Spectrtal Embedding 2D")
-    axs[1].set_title("t-SNE 2D")
-    
-    legend1 = axs[0].legend(*scatter1.legend_elements())
-    axs[0].add_artist(legend1)
-    
-    legend2 = axs[1].legend(*scatter2.legend_elements())
-    axs[1].add_artist(legend2)
-    
-    plt.show()
+    for neig in neigs:
+        # spectral embedding
+        sp_emb = Spectral_Embedding(n_dimensions=2, neighbors=neig, 
+                                    rbf_on=False, t=tau)
+        
+        values, vectors = sp_emb.transform(x)
+        
+        vectors = scaler.fit_transform(vectors)
+        
+        # Spectral Embedding plot
+        fig_1, ax = plt.subplots(1)
+        
+        scatter_1 = ax.scatter(vectors[:, 0], vectors[:, 1], c=y)
+        
+        ax.set_facecolor('black')
+        
+        ax.set_yticks([])
+        ax.set_xticks([])
 
+        ax.set_title(f'Neighbors: {neig}')
+        
+        legend1 = ax.legend(*scatter_1.legend_elements())
+        ax.add_artist(legend1)
+        
+        plt.suptitle("Spectrtal Embedding 2D")
+
+        plt.savefig(f'./MNIST/visualization_plots/spectral/{neig}')
+            
+        plt.close()
+    
+    
+    perps = [5, 10, 20, 30, 40, 50]
+    i = 1
+    for perp in perps:
+        # t-SNE embedding
+        tsne = TSNE(n_components=2, learning_rate='auto', init='random', 
+                    perplexity=perp, random_state=42)
+        
+        x_tsne = tsne.fit_transform(x)
+        
+        x_tsne = scaler.fit_transform(x_tsne)
+        
+        # t-SNE plot
+        fig_2, ax = plt.subplots(1)
+        
+        scatter_2 = ax.scatter(x_tsne[:, 0], x_tsne[:, 1], c=y)
+        
+        ax.set_facecolor('black')
+        
+        ax.set_yticks([])
+        ax.set_xticks([])
+
+        ax.set_title(f'Perplexity {perp}')
+        
+        legend2 = ax.legend(*scatter_2.legend_elements())
+        ax.add_artist(legend2)
+        
+        plt.suptitle("t-SNE 2D")
+        
+        plt.savefig(f'./MNIST/visualization_plots/tsne/{i}')
+        
+        i += 1
 
 
 if __name__ == "__main__":
